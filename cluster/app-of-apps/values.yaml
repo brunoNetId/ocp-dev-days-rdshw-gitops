@@ -99,3 +99,9 @@ workspaceImages:
 developerHub:
   name: developer-hub
   namespace: rhdh
+
+module3:
+  enabled: false
+  name: app-of-apps-m3
+  repoURL: ""
+  targetRevision: ""
