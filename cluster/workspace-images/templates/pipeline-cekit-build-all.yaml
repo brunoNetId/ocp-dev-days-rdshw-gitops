@@ -24,6 +24,14 @@ spec:
     type: string
     description: The repository branch to clone.
     default: {{ .Values.git.ref }}
+  - name: m3-repository
+    type: string
+    description: The git repository for module 3 workspace images.
+    default: {{ .Values.m3.git.uri }}
+  - name: m3-revision
+    type: string
+    description: The repository branch for module 3 workspace images.
+    default: {{ .Values.m3.git.ref }}
   tasks:
   - name: base-images
     retries: 10
@@ -57,3 +65,20 @@ spec:
       value: $(params.repository)
     - name: revision
       value: $(params.revision)
+  - name: m3-workspace-images
+    retries: 10
+    runAfter:
+    - base-images
+    taskRef:
+      name: cekit-class-builder
+    params:
+    - name: registry
+      value: $(params.registry)
+    - name: registry-path
+      value: $(params.registry-path)
+    - name: image-class
+      value: workspace-m3
+    - name: repository
+      value: $(params.m3-repository)
+    - name: revision
+      value: $(params.m3-revision)

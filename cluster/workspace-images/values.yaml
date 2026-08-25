@@ -8,6 +8,12 @@ git:
   ref: "main"
   contextDir: "cekit-builder-image"
 
+# Module 3 workspace image (separate repo)
+m3:
+  git:
+    uri: "https://github.com/brunoNetId/workspace-images.git"
+    ref: "main"
+
 # Image registry configuration
 registry:
   hostname: "image-registry.openshift-image-registry.svc:5000"
