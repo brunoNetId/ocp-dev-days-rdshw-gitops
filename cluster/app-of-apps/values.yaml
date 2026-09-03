@@ -101,7 +101,7 @@ developerHub:
   namespace: rhdh
 
 module3:
-  enabled: false
+  enabled: true
   name: app-of-apps-m3
-  repoURL: ""
-  targetRevision: ""
+  repoURL: https://github.com/brunoNetId/test-gitops-m3.git
+  targetRevision: main
