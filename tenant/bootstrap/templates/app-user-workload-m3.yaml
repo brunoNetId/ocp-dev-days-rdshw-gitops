@@ -1,0 +1,39 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: {{ .Values.tenant.username }}-workload-m3
+  namespace: {{ .Values.argocd.namespace }}
+  annotations:
+    argocd.argoproj.io/sync-wave: "3"
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  destination:
+    namespace: {{ .Values.argocd.namespace }}
+    server: https://kubernetes.default.svc
+  project: default
+  source:
+    path: tenant/user-workload
+    repoURL: {{ .Values.module3.repoURL }}
+    targetRevision: {{ .Values.module3.targetRevision }}
+    helm:
+      valuesObject:
+        tenant:
+          username: {{ .Values.tenant.username }}
+          openshiftUser: {{ .Values.tenant.username }}
+          namespacePrefix: {{ .Values.tenant.username }}
+        cluster:
+          appsDomain: {{ .Values.cluster.subdomain }}
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    retry:
+      backoff:
+        duration: 5s
+        factor: 2
+        maxDuration: 2m0s
+      limit: 30
+    syncOptions:
+      - CreateNamespace=true
+      - RespectIgnoreDifferences=true

@@ -22,3 +22,7 @@ cluster:
 
 registry:
   host: ""
+
+module3:
+  repoURL: https://github.com/brunoNetId/test-gitops-m3.git
+  targetRevision: main
