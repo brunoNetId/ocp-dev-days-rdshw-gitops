@@ -21,7 +21,6 @@ spec:
         tenant:
           username: {{ .Values.tenant.username }}
           openshiftUser: {{ .Values.tenant.username }}
-          namespacePrefix: {{ .Values.tenant.username }}
         cluster:
           appsDomain: {{ .Values.cluster.subdomain }}
   syncPolicy:
