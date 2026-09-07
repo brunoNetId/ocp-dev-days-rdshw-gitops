@@ -11,6 +11,11 @@ spec:
   destination:
     namespace: {{ .Values.argocd.namespace }}
     server: https://kubernetes.default.svc
+  ignoreDifferences:
+    - group: gateway.networking.k8s.io
+      kind: HTTPRoute
+      jsonPointers:
+        - /spec/rules/0/filters/1/requestHeaderModifier/set/0/value
   project: default
   source:
     path: tenant/user-workload
