@@ -12,6 +12,10 @@ spec:
     namespace: {{ .Values.argocd.namespace }}
     server: https://kubernetes.default.svc
   ignoreDifferences:
+    - group: apps
+      kind: Deployment
+      jsonPointers:
+        - /spec/replicas
     - group: gateway.networking.k8s.io
       kind: HTTPRoute
       jsonPointers:
