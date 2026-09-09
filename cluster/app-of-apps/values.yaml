@@ -1,5 +1,5 @@
 gitops:
-  repoURL: https://github.com/brunoNetId/ocp-dev-days-rdshw-gitops.git
+  repoURL: https://github.com/rhpds/ocp-dev-days-rdshw-gitops.git
   targetRevision: main
 
 argocd:
