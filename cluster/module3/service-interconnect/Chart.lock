@@ -1,0 +1,6 @@
+dependencies:
+- name: skupper-operator
+  repository: file://skupper-operator
+  version: 0.1.0
+digest: sha256:0a1071b23dd12e8ea46c75541ec2f8439d6f54f202b75eac60422c624787a6d0
+generated: "2026-08-14T10:40:59.896857+01:00"

@@ -103,5 +103,3 @@ developerHub:
 module3:
   enabled: true
   name: app-of-apps-m3
-  repoURL: https://github.com/brunoNetId/test-gitops-m3.git
-  targetRevision: main

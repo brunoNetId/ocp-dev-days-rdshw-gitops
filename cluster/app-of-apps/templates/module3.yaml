@@ -12,9 +12,9 @@ spec:
     server: https://kubernetes.default.svc
   project: default
   source:
-    path: cluster/app-of-apps
-    repoURL: {{ .Values.module3.repoURL }}
-    targetRevision: {{ .Values.module3.targetRevision }}
+    path: cluster/module3/app-of-apps
+    repoURL: {{ .Values.gitops.repoURL }}
+    targetRevision: {{ .Values.gitops.targetRevision }}
     helm:
       valuesObject:
         cluster:

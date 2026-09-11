@@ -24,9 +24,9 @@ spec:
         - /spec/rules/0/filters/1/requestHeaderModifier/set/0/value
   project: default
   source:
-    path: tenant/user-workload
-    repoURL: {{ .Values.module3.repoURL }}
-    targetRevision: {{ .Values.module3.targetRevision }}
+    path: tenant/module3
+    repoURL: {{ .Values.gitops.repoURL }}
+    targetRevision: {{ .Values.gitops.targetRevision }}
     helm:
       valuesObject:
         tenant:
