@@ -17,6 +17,9 @@ spec:
     targetRevision: {{ .Values.gitops.targetRevision }}
     helm:
       valuesObject:
+        gitops:
+          repoURL: {{ .Values.gitops.repoURL }}
+          targetRevision: {{ .Values.gitops.targetRevision }}
         cluster:
           subdomain: {{ .Values.cluster.subdomain }}
         connectivityLink:
