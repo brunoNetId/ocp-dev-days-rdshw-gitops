@@ -8,7 +8,7 @@ metadata:
   annotations:
     {{- include "showroom.workloads-syncwave" . | nindent 4 }}
 spec:
-  backoffLimit: 3
+  backoffLimit: 10
   template:
     spec:
       serviceAccountName: docserver
