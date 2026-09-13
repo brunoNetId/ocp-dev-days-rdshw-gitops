@@ -4,6 +4,7 @@ metadata:
   name: vault-seed-s3
   namespace: {{ .Values.namespace }}
   annotations:
+    argocd.argoproj.io/sync-wave: "0"
     argocd.argoproj.io/hook: Sync
     argocd.argoproj.io/hook-delete-policy: HookSucceeded,BeforeHookCreation
 ---
@@ -12,6 +13,7 @@ kind: ClusterRole
 metadata:
   name: vault-seed-s3
   annotations:
+    argocd.argoproj.io/sync-wave: "0"
     argocd.argoproj.io/hook: Sync
     argocd.argoproj.io/hook-delete-policy: HookSucceeded,BeforeHookCreation
 rules:
@@ -34,6 +36,7 @@ kind: ClusterRoleBinding
 metadata:
   name: vault-seed-s3
   annotations:
+    argocd.argoproj.io/sync-wave: "0"
     argocd.argoproj.io/hook: Sync
     argocd.argoproj.io/hook-delete-policy: HookSucceeded,BeforeHookCreation
 roleRef:
@@ -51,6 +54,7 @@ metadata:
   name: vault-seed-s3
   namespace: {{ .Values.namespace }}
   annotations:
+    argocd.argoproj.io/sync-wave: "0"
     argocd.argoproj.io/hook: Sync
     argocd.argoproj.io/hook-delete-policy: HookSucceeded,BeforeHookCreation
 spec:

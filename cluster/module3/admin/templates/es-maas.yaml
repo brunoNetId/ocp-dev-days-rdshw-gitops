@@ -5,6 +5,8 @@ metadata:
   namespace: {{ .Values.kuadrantNamespace }}
   labels:
     {{- include "admin.labels" . | nindent 4 }}
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
 spec:
   refreshInterval: 5m
   secretStoreRef:
