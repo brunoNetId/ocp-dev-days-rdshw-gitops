@@ -4,7 +4,7 @@ namespace: "workspace-images"
 
 # Git repository configuration
 git:
-  uri: "https://github.com/brunoNetId/workspace-images.git"
+  uri: "https://github.com/openshift-dev-days/workspace-images.git"
   ref: "main"
   contextDir: "cekit-builder-image"
 
