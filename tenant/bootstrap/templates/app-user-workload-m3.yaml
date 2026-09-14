@@ -14,10 +14,12 @@ spec:
     namespace: {{ .Values.argocd.namespace }}
     server: https://kubernetes.default.svc
   ignoreDifferences:
+    # Build job scales Camel deployments to 0 after creating images, students scale them back up and Argo should not revert
     - group: apps
       kind: Deployment
       jsonPointers:
         - /spec/replicas
+    # Provisioning job patches per-user API key into HTTPRoute, Argo should not revert
     - group: gateway.networking.k8s.io
       kind: HTTPRoute
       jsonPointers:
@@ -31,6 +33,7 @@ spec:
       valuesObject:
         tenant:
           username: {{ .Values.tenant.username }}
+          # Kept separate. OpenShift identity may not be valid for application accounts
           openshiftUser: {{ .Values.tenant.username }}
           password: {{ .Values.tenant.password }}
         cluster:
