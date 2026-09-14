@@ -1,3 +1,4 @@
+{{- if .Values.waitForES.enabled }}
 apiVersion: v1
 kind: ServiceAccount
 metadata:
@@ -88,3 +89,4 @@ spec:
               done
               echo "Timed out waiting for ExternalSecret readiness"
               exit 1
+{{- end }}

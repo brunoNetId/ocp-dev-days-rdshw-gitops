@@ -9,3 +9,6 @@ vault:
 s3:
   noobaaNamespace: openshift-storage
   noobaaSecret: noobaa-admin
+
+waitForES:
+  enabled: false
