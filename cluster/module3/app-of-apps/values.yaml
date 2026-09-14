@@ -12,11 +12,6 @@ catalogSource:
 cluster:
   subdomain: ""
 
-kafkaInstance:
-  enabled: false
-  name: kafka-instance
-  namespace: test1-devspaces-module3
-
 matrix:
   enabled: true
   name: matrix
