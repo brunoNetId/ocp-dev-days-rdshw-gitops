@@ -15,7 +15,7 @@ spec:
       restartPolicy: Never
       containers:
         - name: skupper-cleanup
-          image: badouralix/curl-jq:latest
+          image: registry.redhat.io/openshift4/ose-tools-rhel9:latest
           env:
             - name: SHARED_DB_NS
               value: {{ .Values.sharedDatabase.namespace | quote }}

@@ -15,7 +15,7 @@ spec:
       restartPolicy: Never
       containers:
         - name: matrix-cleanup
-          image: curlimages/curl:latest
+          image: registry.redhat.io/openshift4/ose-tools-rhel9:latest
           command:
             - /bin/sh
             - -c

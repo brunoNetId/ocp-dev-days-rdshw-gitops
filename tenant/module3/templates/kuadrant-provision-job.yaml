@@ -15,7 +15,7 @@ spec:
       restartPolicy: Never
       containers:
         - name: kuadrant-provision
-          image: badouralix/curl-jq:latest
+          image: registry.redhat.io/openshift4/ose-tools-rhel9:latest
           env:
             - name: TENANT_USERNAME
               value: {{ .Values.tenant.username | quote }}

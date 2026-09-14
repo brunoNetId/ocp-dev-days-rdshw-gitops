@@ -16,7 +16,7 @@ spec:
       restartPolicy: Never
       containers:
         - name: lab-config-assembly
-          image: badouralix/curl-jq:latest
+          image: registry.redhat.io/openshift4/ose-tools-rhel9:latest
           env:
             - name: HELPDESK_URL
               value: "https://helpdesk-{{ .Values.helpdesk.namespace }}.{{ .Values.cluster.appsDomain }}"

@@ -15,7 +15,7 @@ spec:
       restartPolicy: Never
       containers:
         - name: rc-provision
-          image: curlimages/curl:latest
+          image: registry.redhat.io/openshift4/ose-tools-rhel9:latest
           env:
             - name: USER_PASS
               value: {{ .Values.tenant.password | quote }}
