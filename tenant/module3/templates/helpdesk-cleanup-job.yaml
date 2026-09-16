@@ -36,6 +36,30 @@ data:
           ansible.builtin.set_fact:
             access_token: "{{ "{{" }} r_admin_login.json.accessToken {{ "}}" }}"
 
+        - name: Get all tickets
+          ansible.builtin.uri:
+            url: "{{ "{{" }} hd_url {{ "}}" }}/api/v1/tickets"
+            headers:
+              accesstoken: "{{ "{{" }} access_token {{ "}}" }}"
+          register: r_tickets
+          ignore_errors: true
+
+        - name: Filter tickets owned by user
+          ansible.builtin.set_fact:
+            user_tickets: "{{ "{{" }} r_tickets.json | default([]) | selectattr('owner.username', 'equalto', username) | list {{ "}}" }}"
+          when: r_tickets is succeeded
+
+        - name: Soft-delete user tickets
+          ansible.builtin.uri:
+            url: "{{ "{{" }} hd_url {{ "}}" }}/api/v1/tickets/{{ "{{" }} item._id {{ "}}" }}"
+            method: DELETE
+            headers:
+              accesstoken: "{{ "{{" }} access_token {{ "}}" }}"
+          loop: "{{ "{{" }} user_tickets | default([]) {{ "}}" }}"
+          loop_control:
+            label: "{{ "{{" }} item.uid | default('?') {{ "}}" }}"
+          ignore_errors: true
+
         - name: Delete user
           ansible.builtin.uri:
             url: "{{ "{{" }} hd_url {{ "}}" }}/api/v1/users/{{ "{{" }} username {{ "}}" }}"

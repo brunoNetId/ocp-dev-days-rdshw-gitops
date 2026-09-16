@@ -106,6 +106,14 @@ data:
             headers:
               accesstoken: "{{ "{{" }} access_token {{ "}}" }}"
             status_code: [200, 400]
+          register: r_create_user
+
+        - name: Reactivate soft-deleted user
+          ansible.builtin.uri:
+            url: "{{ "{{" }} hd_url {{ "}}" }}/api/v1/users/{{ "{{" }} username {{ "}}" }}/enable"
+            headers:
+              accesstoken: "{{ "{{" }} access_token {{ "}}" }}"
+          when: r_create_user.status == 400
 
         - name: Get ticket type and priority IDs
           ansible.builtin.uri:
