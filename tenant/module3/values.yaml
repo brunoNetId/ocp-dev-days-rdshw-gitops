@@ -46,6 +46,10 @@ sharedDatabase:
 admin:
   namespace: admin-m3
 
+vault:
+  name: vault
+  namespace: vault
+
 cluster:
   appsDomain: ""
 
@@ -79,6 +83,10 @@ connectivityLink:
     namespace: llm-api
     serviceName: ai-api-external
   kuadrantNamespace: kuadrant-system
+
+litellm:
+  url: ""
+  apiKey: ""
 
 argocd:
   syncwave:

@@ -1,8 +1,142 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: m3-hd-provision-{{ .Values.tenant.username }}
+  labels:
+    {{- include "user-workload.labels" . | nindent 4 }}
+  annotations:
+    argocd.argoproj.io/sync-wave: "0"
+data:
+  playbook.yaml: |
+    ---
+    - name: Helpdesk provisioning + Vault write
+      hosts: localhost
+      gather_facts: false
+      vars:
+        hd_url: "http://helpdesk.{{ .Values.helpdesk.namespace }}.svc.cluster.local:8118"
+        admin_user: {{ .Values.helpdesk.admin.username | quote }}
+        admin_pass: {{ .Values.helpdesk.admin.password | quote }}
+        username: {{ .Values.tenant.username | quote }}
+        user_pass: "{{ "{{" }} lookup('env', 'USER_PASSWORD') {{ "}}" }}"
+        group_name: "Group {{ .Values.tenant.username }}"
+        vault_namespace: {{ .Values.vault.namespace | quote }}
+        vault_pod: "{{ .Values.vault.name }}-0"
+      tasks:
+        - name: Wait for Trudesk to be ready
+          ansible.builtin.uri:
+            url: "{{ "{{" }} hd_url {{ "}}" }}"
+          register: r_hd
+          retries: 30
+          delay: 10
+          until: r_hd.status == 200
+
+        - name: Login as admin
+          ansible.builtin.uri:
+            url: "{{ "{{" }} hd_url {{ "}}" }}/api/v1/login"
+            method: POST
+            body_format: json
+            body:
+              username: "{{ "{{" }} admin_user {{ "}}" }}"
+              password: "{{ "{{" }} admin_pass {{ "}}" }}"
+          register: r_admin_login
+
+        - name: Set admin token
+          ansible.builtin.set_fact:
+            access_token: "{{ "{{" }} r_admin_login.json.accessToken {{ "}}" }}"
+
+        - name: Get User role ID
+          ansible.builtin.uri:
+            url: "{{ "{{" }} hd_url {{ "}}" }}/api/v1/roles"
+            headers:
+              accesstoken: "{{ "{{" }} access_token {{ "}}" }}"
+          register: r_roles
+
+        - name: Set role ID
+          ansible.builtin.set_fact:
+            role_id: "{{ "{{" }} r_roles.json.roles | selectattr('name', 'equalto', 'User') | map(attribute='_id') | first {{ "}}" }}"
+
+        - name: Create group
+          ansible.builtin.uri:
+            url: "{{ "{{" }} hd_url {{ "}}" }}/api/v1/groups/create"
+            method: POST
+            body_format: json
+            body:
+              name: "{{ "{{" }} group_name {{ "}}" }}"
+              members: []
+            headers:
+              accesstoken: "{{ "{{" }} access_token {{ "}}" }}"
+            status_code: [200, 400]
+          register: r_create_group
+
+        - name: Set group ID from creation
+          ansible.builtin.set_fact:
+            group_id: "{{ "{{" }} r_create_group.json.group._id {{ "}}" }}"
+          when:
+            - r_create_group.status == 200
+            - r_create_group.json.group is defined
+
+        - name: Look up existing group ID
+          when: group_id is not defined
+          block:
+            - name: Fetch all groups
+              ansible.builtin.uri:
+                url: "{{ "{{" }} hd_url {{ "}}" }}/api/v1/groups/all"
+                headers:
+                  accesstoken: "{{ "{{" }} access_token {{ "}}" }}"
+              register: r_groups
+
+            - name: Set group ID from lookup
+              ansible.builtin.set_fact:
+                group_id: "{{ "{{" }} r_groups.json.groups | selectattr('name', 'equalto', group_name) | map(attribute='_id') | first {{ "}}" }}"
+
+        - name: Create user
+          ansible.builtin.uri:
+            url: "{{ "{{" }} hd_url {{ "}}" }}/api/v1/users/create"
+            method: POST
+            body_format: json
+            body:
+              aUsername: "{{ "{{" }} username {{ "}}" }}"
+              aFullname: "{{ "{{" }} username {{ "}}" }}"
+              aEmail: "{{ "{{" }} username {{ "}}" }}@globex.com"
+              aPass: "{{ "{{" }} user_pass {{ "}}" }}"
+              aPassConfirm: "{{ "{{" }} user_pass {{ "}}" }}"
+              aRole: "{{ "{{" }} role_id {{ "}}" }}"
+              aGrps:
+                - "{{ "{{" }} group_id {{ "}}" }}"
+            headers:
+              accesstoken: "{{ "{{" }} access_token {{ "}}" }}"
+            status_code: [200, 400]
+
+        - name: Get ticket type and priority IDs
+          ansible.builtin.uri:
+            url: "{{ "{{" }} hd_url {{ "}}" }}/api/v1/tickets/types"
+            headers:
+              accesstoken: "{{ "{{" }} access_token {{ "}}" }}"
+          register: r_types
+
+        - name: Set ticket type and priority IDs
+          ansible.builtin.set_fact:
+            type_id_issue: "{{ "{{" }} r_types.json | selectattr('name', 'equalto', 'Issue') | map(attribute='_id') | first {{ "}}" }}"
+            priority_id_normal: "{{ "{{" }} (r_types.json | selectattr('name', 'equalto', 'Issue') | first).priorities | selectattr('name', 'equalto', 'Normal') | map(attribute='_id') | first {{ "}}" }}"
+
+        - name: Write Helpdesk credentials to Vault
+          kubernetes.core.k8s_exec:
+            namespace: "{{ "{{" }} vault_namespace {{ "}}" }}"
+            pod: "{{ "{{" }} vault_pod {{ "}}" }}"
+            command: >-
+              vault kv put kv/secrets/tenants/{{ "{{" }} username {{ "}}" }}/helpdesk
+              groupId={{ "{{" }} group_id {{ "}}" }}
+              typeIdIssue={{ "{{" }} type_id_issue {{ "}}" }}
+              priorityIdNormal={{ "{{" }} priority_id_normal {{ "}}" }}
+              username={{ "{{" }} username {{ "}}" }}
+              password={{ "{{" }} user_pass {{ "}}" }}
+          register: r_vault_write
+          failed_when: r_vault_write.rc != 0
+---
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: hd-provision-{{ .Values.tenant.username }}
-  namespace: {{ include "user-workload.namespace" . }}
+  name: m3-hd-provision-{{ .Values.tenant.username }}
   labels:
     {{- include "user-workload.labels" . | nindent 4 }}
   annotations:
@@ -12,147 +146,33 @@ spec:
   backoffLimit: 10
   template:
     spec:
-      restartPolicy: Never
+      serviceAccountName: tenant-{{ .Values.tenant.username }}
+      securityContext:
+        runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
       containers:
         - name: hd-provision
-          image: registry.redhat.io/openshift4/ose-tools-rhel9:latest
-          env:
-            - name: USER_PASS
-              value: {{ .Values.tenant.password | quote }}
           command:
-            - /bin/sh
-            - -c
+            - /bin/bash
+            - '-c'
             - |
-              set -e
-
-              HD_URL="http://helpdesk.{{ .Values.helpdesk.namespace }}.svc.cluster.local:8118"
-              ADMIN_USER="{{ .Values.helpdesk.admin.username }}"
-              ADMIN_PASS="{{ .Values.helpdesk.admin.password }}"
-              USERNAME="{{ .Values.tenant.username }}"
-              GROUP_NAME="Group ${USERNAME}"
-
-              # --- Step 1: Wait for Trudesk to be ready ---
-              echo "Waiting for Trudesk..."
-              until curl -sf "${HD_URL}" > /dev/null 2>&1; do
-                echo "  Trudesk not ready, retrying in 5s..."
-                sleep 5
-              done
-              echo "Trudesk is ready."
-
-              # --- Step 2: Login as admin ---
-              echo "Logging in as admin..."
-              RESPONSE=$(curl -sf "${HD_URL}/api/v1/login" \
-                -H 'Content-Type: application/json' \
-                -d "{\"username\":\"${ADMIN_USER}\",\"password\":\"${ADMIN_PASS}\"}")
-
-              ACCESS_TOKEN=$(echo "$RESPONSE" | sed -n 's/.*"accessToken":"\([^"]*\)".*/\1/p')
-              if [ -z "$ACCESS_TOKEN" ]; then
-                echo "ERROR: Failed to get admin access token"
-                exit 1
-              fi
-              echo "Admin login successful."
-
-              # --- Step 3: Get User role ID ---
-              echo "Fetching User role ID..."
-              RESPONSE=$(curl -sf "${HD_URL}/api/v1/roles" \
-                -H "accesstoken: ${ACCESS_TOKEN}")
-
-              ROLE_ID=$(echo "$RESPONSE" | jq -r '.roles[]? | select(.name=="User") | ._id' 2>/dev/null)
-              if [ -z "$ROLE_ID" ]; then
-                echo "ERROR: Could not find User role"
-                exit 1
-              fi
-              echo "User role ID: ${ROLE_ID}"
-
-              # --- Step 4: Create group ---
-              echo "Creating group '${GROUP_NAME}'..."
-              RESPONSE=$(curl -s -w "\n%{http_code}" "${HD_URL}/api/v1/groups/create" \
-                -H 'Content-Type: application/json' \
-                -H "accesstoken: ${ACCESS_TOKEN}" \
-                -d "{\"name\": \"${GROUP_NAME}\", \"members\": []}")
-
-              HTTP_CODE=$(echo "$RESPONSE" | tail -1)
-              BODY=$(echo "$RESPONSE" | sed '$d')
-
-              if [ "$HTTP_CODE" = "200" ]; then
-                echo "Group created successfully."
-              elif echo "$BODY" | grep -q "11000"; then
-                echo "Group '${GROUP_NAME}' already exists (OK)."
-              else
-                echo "ERROR: Failed to create group (HTTP ${HTTP_CODE}): ${BODY}"
-                exit 1
-              fi
-
-              GROUP_ID=$(echo "$BODY" | jq -r '.group._id // empty' 2>/dev/null)
-              if [ -z "$GROUP_ID" ]; then
-                echo "Looking up existing group ID..."
-                RESPONSE=$(curl -sf "${HD_URL}/api/v1/groups/all" \
-                  -H "accesstoken: ${ACCESS_TOKEN}")
-                GROUP_ID=$(echo "$RESPONSE" | jq -r ".groups[]? | select(.name==\"${GROUP_NAME}\") | ._id" 2>/dev/null)
-              fi
-
-              if [ -z "$GROUP_ID" ]; then
-                echo "ERROR: Could not determine group ID"
-                exit 1
-              fi
-              echo "Group ID: ${GROUP_ID}"
-
-              # --- Step 5: Create user ---
-              echo "Creating Trudesk user '${USERNAME}'..."
-              RESPONSE=$(curl -s -w "\n%{http_code}" "${HD_URL}/api/v1/users/create" \
-                -H 'Content-Type: application/json' \
-                -H "accesstoken: ${ACCESS_TOKEN}" \
-                -d "{
-                  \"aUsername\": \"${USERNAME}\",
-                  \"aFullname\": \"${USERNAME}\",
-                  \"aEmail\": \"${USERNAME}@globex.com\",
-                  \"aPass\": \"${USER_PASS}\",
-                  \"aPassConfirm\": \"${USER_PASS}\",
-                  \"aRole\": \"${ROLE_ID}\",
-                  \"aGrps\": [\"${GROUP_ID}\"]
-                }")
-
-              HTTP_CODE=$(echo "$RESPONSE" | tail -1)
-              BODY=$(echo "$RESPONSE" | sed '$d')
-
-              if [ "$HTTP_CODE" = "200" ]; then
-                echo "User '${USERNAME}' created successfully."
-              elif echo "$BODY" | grep -q "11000"; then
-                echo "User '${USERNAME}' already exists (OK)."
-              else
-                echo "ERROR: Failed to create user (HTTP ${HTTP_CODE}): ${BODY}"
-                exit 1
-              fi
-
-              # --- Step 6: Get ticket type and priority IDs ---
-              echo "Fetching ticket type and priority IDs..."
-              RESPONSE=$(curl -sf "${HD_URL}/api/v1/tickets/types" \
-                -H "accesstoken: ${ACCESS_TOKEN}")
-              TYPE_ID_ISSUE=$(echo "$RESPONSE" | jq -r '.[]? | select(.name=="Issue") | ._id' 2>/dev/null)
-              PRIORITY_ID_NORMAL=$(echo "$RESPONSE" | jq -r '.[]? | select(.name=="Issue") | .priorities[]? | select(.name=="Normal") | ._id' 2>/dev/null)
-              echo "Type ID (Issue): ${TYPE_ID_ISSUE}, Priority ID (Normal): ${PRIORITY_ID_NORMAL}"
-
-              # --- Step 7: Store credentials in lab-credentials Secret ---
-              echo "Storing HelpDesk credentials..."
-              SA_TOKEN=$(cat /var/run/secrets/kubernetes.io/serviceaccount/token)
-              NAMESPACE="{{ include "user-workload.namespace" . }}"
-              JSON_DATA=$(jq -n --indent 2 \
-                --arg gid "$GROUP_ID" \
-                --arg tid "$TYPE_ID_ISSUE" \
-                --arg pid "$PRIORITY_ID_NORMAL" \
-                --arg user "$USERNAME" \
-                --arg pass "$USER_PASS" \
-                '{groupId: $gid, typeIdIssue: $tid, priorityIdNormal: $pid, username: $user, password: $pass}')
-              B64_DATA=$(printf '%s' "$JSON_DATA" | base64 | tr -d '\n')
-              HTTP_CODE=$(curl -sSk -o /dev/null -w "%{http_code}" -X PATCH \
-                "https://kubernetes.default.svc/api/v1/namespaces/${NAMESPACE}/secrets/lab-credentials" \
-                -H "Authorization: Bearer ${SA_TOKEN}" \
-                -H "Content-Type: application/merge-patch+json" \
-                -d '{"data":{"helpdesk.json":"'"${B64_DATA}"'"}}')
-              if [ "$HTTP_CODE" = "200" ]; then
-                echo "HelpDesk credentials stored."
-              else
-                echo "WARNING: Failed to store credentials (HTTP ${HTTP_CODE})"
-              fi
-
-              echo "HelpDesk provisioning complete for ${USERNAME}."
+              set -x
+              ansible-playbook -i localhost /scripts/playbook.yaml
+          image: quay.io/agnosticd/ee-multicloud:latest
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+          env:
+            - name: USER_PASSWORD
+              value: {{ .Values.tenant.password | quote }}
+          volumeMounts:
+            - mountPath: /scripts
+              name: scripts
+      restartPolicy: Never
+      volumes:
+        - name: scripts
+          configMap:
+            name: m3-hd-provision-{{ .Values.tenant.username }}

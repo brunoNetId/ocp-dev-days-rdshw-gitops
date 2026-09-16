@@ -1,8 +1,78 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: m3-matrix-cleanup-{{ .Values.tenant.username }}
+  labels:
+    {{- include "user-workload.labels" . | nindent 4 }}
+data:
+  playbook.yaml: |
+    ---
+    - name: Matrix cleanup
+      hosts: localhost
+      gather_facts: false
+      vars:
+        synapse_url: "http://synapse.{{ .Values.matrix.namespace }}.svc.cluster.local:8008"
+        server_name: {{ .Values.matrix.serverName | quote }}
+        admin_user: {{ .Values.matrix.admin.username | quote }}
+        admin_pass: {{ .Values.matrix.admin.password | quote }}
+        username: {{ .Values.tenant.username | quote }}
+        room_name: {{ include "user-workload.roomname" . | trim | quote }}
+      tasks:
+        - name: Login as admin
+          ansible.builtin.uri:
+            url: "{{ "{{" }} synapse_url {{ "}}" }}/_matrix/client/r0/login"
+            method: POST
+            body_format: json
+            body:
+              type: m.login.password
+              user: "{{ "{{" }} admin_user {{ "}}" }}"
+              password: "{{ "{{" }} admin_pass {{ "}}" }}"
+          register: r_admin_login
+          ignore_errors: true
+
+        - name: Skip if Synapse unreachable
+          ansible.builtin.meta: end_play
+          when: r_admin_login is failed
+
+        - name: Set admin token
+          ansible.builtin.set_fact:
+            admin_token: "{{ "{{" }} r_admin_login.json.access_token {{ "}}" }}"
+
+        - name: Resolve room alias
+          ansible.builtin.uri:
+            url: "{{ "{{" }} synapse_url {{ "}}" }}/_matrix/client/v3/directory/room/%23{{ "{{" }} room_name {{ "}}" }}:{{ "{{" }} server_name {{ "}}" }}"
+            headers:
+              Authorization: "Bearer {{ "{{" }} admin_token {{ "}}" }}"
+          register: r_room_lookup
+          ignore_errors: true
+
+        - name: Delete room
+          ansible.builtin.uri:
+            url: "{{ "{{" }} synapse_url {{ "}}" }}/_synapse/admin/v2/rooms/{{ "{{" }} r_room_lookup.json.room_id | regex_replace('!', '%21') | regex_replace(':', '%3A') {{ "}}" }}"
+            method: DELETE
+            body_format: json
+            body:
+              purge: true
+            headers:
+              Authorization: "Bearer {{ "{{" }} admin_token {{ "}}" }}"
+          when: r_room_lookup is succeeded
+          ignore_errors: true
+
+        - name: Deactivate user
+          ansible.builtin.uri:
+            url: "{{ "{{" }} synapse_url {{ "}}" }}/_synapse/admin/v1/deactivate/@{{ "{{" }} username {{ "}}" }}:{{ "{{" }} server_name {{ "}}" }}"
+            method: POST
+            body_format: json
+            body:
+              erase: true
+            headers:
+              Authorization: "Bearer {{ "{{" }} admin_token {{ "}}" }}"
+          ignore_errors: true
+---
 apiVersion: batch/v1
 kind: Job
 metadata:
   name: matrix-cleanup-{{ .Values.tenant.username }}
-  namespace: {{ include "user-workload.namespace" . }}
   labels:
     {{- include "user-workload.labels" . | nindent 4 }}
   annotations:
@@ -12,65 +82,28 @@ spec:
   backoffLimit: 3
   template:
     spec:
-      restartPolicy: Never
+      serviceAccountName: tenant-{{ .Values.tenant.username }}
+      securityContext:
+        runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
       containers:
         - name: matrix-cleanup
-          image: registry.redhat.io/openshift4/ose-tools-rhel9:latest
           command:
-            - /bin/sh
-            - -c
-            - |
-              SYNAPSE_URL="http://synapse.{{ .Values.matrix.namespace }}.svc.cluster.local:8008"
-              SERVER_NAME="{{ .Values.matrix.serverName }}"
-              ADMIN_USER="{{ .Values.matrix.admin.username }}"
-              ADMIN_PASS="{{ .Values.matrix.admin.password }}"
-              USERNAME="{{ .Values.tenant.username }}"
-              ROOM_NAME="{{ include "user-workload.roomname" . }}"
-
-              # --- Step 1: Login as admin ---
-              echo "Logging in as admin..."
-              RESPONSE=$(curl -sf "${SYNAPSE_URL}/_matrix/client/r0/login" \
-                -H 'Content-Type: application/json' \
-                -d "{\"type\":\"m.login.password\",\"user\":\"${ADMIN_USER}\",\"password\":\"${ADMIN_PASS}\"}" 2>/dev/null)
-
-              ACCESS_TOKEN=$(echo "$RESPONSE" | sed -n 's/.*"access_token":"\([^"]*\)".*/\1/p')
-              if [ -z "$ACCESS_TOKEN" ]; then
-                echo "WARNING: Could not get admin token — Synapse may be unreachable. Skipping cleanup."
-                exit 0
-              fi
-              echo "Admin login successful."
-
-              # --- Step 2: Resolve room alias to room_id ---
-              ENCODED_ALIAS="%23${ROOM_NAME}%3A${SERVER_NAME}"
-              echo "Resolving room alias #${ROOM_NAME}:${SERVER_NAME}..."
-              RESPONSE=$(curl -s "${SYNAPSE_URL}/_matrix/client/v3/directory/room/${ENCODED_ALIAS}" \
-                -H "Authorization: Bearer ${ACCESS_TOKEN}" 2>/dev/null)
-
-              ROOM_ID=$(echo "$RESPONSE" | sed -n 's/.*"room_id":"\([^"]*\)".*/\1/p')
-
-              # --- Step 3: Delete room (if found) ---
-              if [ -n "$ROOM_ID" ]; then
-                ENCODED_ROOM_ID=$(echo "$ROOM_ID" | sed 's/!/%21/g; s/:/%3A/g')
-                echo "Deleting room ${ROOM_ID}..."
-                curl -s -o /dev/null \
-                  "${SYNAPSE_URL}/_synapse/admin/v2/rooms/${ENCODED_ROOM_ID}" \
-                  -X DELETE \
-                  -H 'Content-Type: application/json' \
-                  -H "Authorization: Bearer ${ACCESS_TOKEN}" \
-                  -d '{"purge":true}' 2>/dev/null || echo "WARNING: Room deletion returned an error (non-fatal)."
-                echo "Room deletion queued."
-              else
-                echo "Room alias not found — nothing to delete."
-              fi
-
-              # --- Step 4: Deactivate user ---
-              echo "Deactivating user @${USERNAME}:${SERVER_NAME}..."
-              curl -s -o /dev/null \
-                "${SYNAPSE_URL}/_synapse/admin/v1/deactivate/@${USERNAME}:${SERVER_NAME}" \
-                -X POST \
-                -H 'Content-Type: application/json' \
-                -H "Authorization: Bearer ${ACCESS_TOKEN}" \
-                -d '{"erase":true}' 2>/dev/null || echo "WARNING: User deactivation returned an error (non-fatal)."
-              echo "User deactivated."
-
-              echo "Matrix cleanup complete for ${USERNAME}."
+            - /bin/bash
+            - '-c'
+            - ansible-playbook -i localhost /scripts/playbook.yaml
+          image: quay.io/agnosticd/ee-multicloud:latest
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+          volumeMounts:
+            - mountPath: /scripts
+              name: scripts
+      restartPolicy: Never
+      volumes:
+        - name: scripts
+          configMap:
+            name: m3-matrix-cleanup-{{ .Values.tenant.username }}
