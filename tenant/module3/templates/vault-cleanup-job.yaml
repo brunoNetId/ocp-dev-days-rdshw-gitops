@@ -24,7 +24,7 @@ data:
           kubernetes.core.k8s_exec:
             namespace: "{{ "{{" }} vault_namespace {{ "}}" }}"
             pod: "{{ "{{" }} vault_pod {{ "}}" }}"
-            command: "vault kv delete {{ "{{" }} item {{ "}}" }}"
+            command: "vault kv metadata delete {{ "{{" }} item {{ "}}" }}"
           loop: "{{ "{{" }} vault_paths {{ "}}" }}"
           ignore_errors: true
 ---
