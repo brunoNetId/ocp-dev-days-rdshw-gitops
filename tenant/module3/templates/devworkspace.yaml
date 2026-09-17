@@ -24,6 +24,11 @@ spec:
           label: Pre Start Prep
         id: prep-workspace
       - exec:
+          # Workaround for CRW-11193: oc is not auto-logged in on workspace start
+          commandLine: 'oc login -u $OCP_USER -p $OCP_PASSWORD --server=$(oc whoami --show-server) --insecure-skip-tls-verify'
+          component: tools
+        id: oc-login
+      - exec:
           commandLine: 'source ~/.bashrc && echo -e "export LAB_SCRIPTS=/projects/workshop/tools/scripts\nexport PATH=\$LAB_SCRIPTS:\$PATH\nsource setup" >> ~/.bashrc'
           component: tools
         id: setup-lab-default
@@ -54,6 +59,10 @@ spec:
               value: "redhat.vscode-kaoto"
             - name: HOST_USERS
               value: 'false'
+            - name: OCP_USER
+              value: {{ .Values.tenant.username | quote }}
+            - name: OCP_PASSWORD
+              value: {{ .Values.tenant.password | quote }}
           image: {{ .Values.devworkspace.image }}
           memoryLimit: {{ .Values.devworkspace.memoryLimit }}
           sourceMapping: /projects
@@ -90,6 +99,7 @@ spec:
       preStart:
         - prep-workspace
       postStart:
+        - oc-login
         - setup-lab-default
     projects:
       - name: workshop
