@@ -6,6 +6,13 @@ Tenant namespace — derived from the username.
 {{- end }}
 
 {{/*
+Resource prefix — derived from the username.
+*/}}
+{{- define "user-workload.prefix" -}}
+{{ .Values.tenant.username }}
+{{- end }}
+
+{{/*
 Expand the name of the chart.
 */}}
 {{- define "user-workload.name" -}}

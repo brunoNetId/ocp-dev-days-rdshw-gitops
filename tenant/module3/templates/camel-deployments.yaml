@@ -1,7 +1,7 @@
 {{- $namespace := include "user-workload.namespace" . -}}
 {{- $labels := include "user-workload.labels" . -}}
 {{- $imageRegistry := "image-registry.openshift-image-registry.svc:5000" -}}
-{{- $kafkaAnnotation := `[{"apiVersion":"kafka.strimzi.io/v1beta2","kind":"Kafka","name":"my-cluster"}]` -}}
+{{- $kafkaAnnotation := `[{"apiVersion":"kafka.strimzi.io/v1beta2","kind":"Kafka","name":"kafka","namespace":"kafka"}]` -}}
 {{- range $app := list "m2k" "r2k" "k2m" "k2r" }}
 apiVersion: apps/v1
 kind: Deployment
@@ -43,6 +43,8 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: metadata.namespace
+            - name: KAFKA_TOPIC
+              value: {{ include "user-workload.prefix" $ }}-myroom
             {{- if eq $app "k2r" }}
             - name: JAVA_TOOL_OPTIONS
               value: "-Dcamel.component.xslt-saxon.secureProcessing=false"

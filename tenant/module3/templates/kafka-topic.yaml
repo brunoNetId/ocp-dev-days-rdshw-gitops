@@ -1,0 +1,15 @@
+apiVersion: kafka.strimzi.io/v1beta2
+kind: KafkaTopic
+metadata:
+  name: {{ include "user-workload.prefix" . }}-myroom
+  namespace: {{ .Values.kafka.namespace }}
+  labels:
+    {{- include "user-workload.labels" . | nindent 4 }}
+    strimzi.io/cluster: {{ .Values.kafka.clusterName }}
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+spec:
+  partitions: 1
+  replicas: 1
+  config:
+    retention.ms: 604800000
