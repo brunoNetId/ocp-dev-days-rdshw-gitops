@@ -29,6 +29,4 @@ spec:
       transaction.state.log.min.isr: {{ .Values.kafka.config.transactionStateLogMinIsr }}
       default.replication.factor: {{ .Values.kafka.config.defaultReplicationFactor }}
       min.insync.replicas: {{ .Values.kafka.config.minInsyncReplicas }}
-  entityOperator:
-    topicOperator: {}
-    userOperator: {}
+  entityOperator: {}

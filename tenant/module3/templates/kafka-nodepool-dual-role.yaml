@@ -1,7 +1,7 @@
 apiVersion: kafka.strimzi.io/v1beta2
 kind: KafkaNodePool
 metadata:
-  name: controller
+  name: dual-role
   namespace: {{ include "user-workload.namespace" . }}
   labels:
     strimzi.io/cluster: {{ .Values.kafka.clusterName }}
@@ -10,8 +10,16 @@ metadata:
     {{- include "user-workload.kafka-syncwave" . | nindent 4 }}
     argocd.argoproj.io/sync-options: SkipDryRunOnMissingResource=true
 spec:
-  replicas: {{ .Values.kafka.controller.replicas }}
+  replicas: {{ .Values.kafka.dualRole.replicas }}
   roles:
     - controller
+    - broker
   storage:
     type: ephemeral
+  resources:
+    requests:
+      memory: {{ .Values.kafka.dualRole.resources.memory }}
+      cpu: {{ .Values.kafka.dualRole.resources.cpu }}
+    limits:
+      memory: {{ .Values.kafka.dualRole.resources.memory }}
+      cpu: {{ .Values.kafka.dualRole.resources.cpu }}

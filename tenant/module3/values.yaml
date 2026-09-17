@@ -7,10 +7,14 @@ kafka:
   clusterName: my-cluster
   version: 4.1.0
   metadataVersion: 4.1-IV1
-  broker:
+  dualRole:
     replicas: 1
-  controller:
-    replicas: 1
+    resources:
+      memory: 512Mi
+      cpu: 200m
+  topologyMarker:
+    runtime: redhat
+    partOf: my-cluster-topology
   config:
     offsetsTopicReplicationFactor: 1
     transactionStateLogReplicationFactor: 1
