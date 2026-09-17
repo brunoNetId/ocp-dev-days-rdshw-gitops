@@ -1,7 +1,7 @@
 {{- $namespace := include "user-workload.namespace" . -}}
 {{- $labels := include "user-workload.labels" . -}}
 {{- $imageRegistry := "image-registry.openshift-image-registry.svc:5000" -}}
-{{- $kafkaAnnotation := `[{"apiVersion":"kafka.strimzi.io/v1beta2","kind":"Kafka","name":"my-cluster"}]` -}}
+{{- $kafkaAnnotation := `[{"apiVersion":"apps/v1","kind":"Deployment","name":"my-cluster-kafka"}]` -}}
 {{- range $app := list "m2k" "r2k" "k2m" "k2r" }}
 apiVersion: apps/v1
 kind: Deployment
