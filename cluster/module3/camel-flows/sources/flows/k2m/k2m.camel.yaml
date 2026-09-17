@@ -4,8 +4,8 @@
       description: Kafka
       uri: kafka
       parameters:
-        brokers: my-cluster-kafka-bootstrap:9092
-        topic: myroom
+        brokers: kafka-kafka-bootstrap.kafka.svc:9092
+        topic: "{{env:KAFKA_TOPIC}}"
       steps:
         - filter:
             steps:
