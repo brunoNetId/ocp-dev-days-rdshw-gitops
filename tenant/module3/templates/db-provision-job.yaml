@@ -69,6 +69,10 @@ spec:
               ALTER TABLE ${USERNAME}.invoices OWNER TO ${USERNAME};
               ALTER FUNCTION ${USERNAME}.increment_version() OWNER TO ${USERNAME};
 
+              CREATE OR REPLACE VIEW ${USERNAME}.policies AS SELECT * FROM ${USERNAME}.invoices;
+              ALTER VIEW ${USERNAME}.policies OWNER TO ${USERNAME};
+              GRANT SELECT ON ${USERNAME}.policies TO ${USERNAME};
+
               INSERT INTO ${USERNAME}.invoices (id, data) VALUES
               ('61356291', '<Invoice>
                  <InvoiceNumber>61356291</InvoiceNumber>
