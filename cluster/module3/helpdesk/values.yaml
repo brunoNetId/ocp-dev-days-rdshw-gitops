@@ -32,10 +32,10 @@ helpdesk:
 helpdesk_admin:
   username: admin
   password: "Openshift1!"
-  email: admin@globex.com
+  email: admin@parasol.com
 
 branding:
-  siteTitle: "Globex Helpdesk"
+  siteTitle: "Parasol Helpdesk"
   colors:
     headerBg: "#8B0000"
     headerPrimary: "#FFFFFF"

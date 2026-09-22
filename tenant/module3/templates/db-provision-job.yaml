@@ -74,83 +74,89 @@ spec:
               GRANT SELECT ON ${USERNAME}.policies TO ${USERNAME};
 
               INSERT INTO ${USERNAME}.invoices (id, data) VALUES
-              ('61356291', '<Invoice>
-                 <InvoiceNumber>61356291</InvoiceNumber>
-                 <DateOfIssue>20120906</DateOfIssue>
-                 <Seller>
-                    <Name>Rodriguez-Stevens</Name>
+              ('61356291', '<?xml version="1.0" encoding="UTF-8"?>
+              <PolicyDocument xmlns:fn="http://www.w3.org/2005/xpath-functions"
+                              xmlns:xs="http://www.w3.org/2001/XMLSchema">
+                 <PolicyNumber>61356291</PolicyNumber>
+                 <DateOfIssue>20250609</DateOfIssue>
+                 <Insurer>
+                    <Name>Parasol Insurance</Name>
                     <Address>
-                       <Street>2280 Angela Plain</Street>
-                       <City>Hortonshire</City>
-                       <State>MS</State>
-                       <PostalCode>93248</PostalCode>
+                       <Street>One Parasol Plaza</Street>
+                       <City>Atlanta</City>
+                       <State>GA</State>
+                       <PostalCode>30313</PostalCode>
                     </Address>
                     <TaxId>939988477</TaxId>
                     <IBAN>GB50ACIE59715038217063</IBAN>
-                 </Seller>
-                 <Client>
-                    <Name>Chapman, Kim and Green</Name>
+                 </Insurer>
+                 <Policyholder>
+                    <Name>Alex Morgan</Name>
                     <Address>
-                       <Street>64731 James Branch</Street>
-                       <City>Smithmouth</City>
-                       <State>NC</State>
-                       <PostalCode>26872</PostalCode>
+                       <Street>742 Maple Avenue</Street>
+                       <City>Austin</City>
+                       <State>TX</State>
+                       <PostalCode>78701</PostalCode>
                     </Address>
                     <TaxId>949849105</TaxId>
-                 </Client>
+                 </Policyholder>
                  <Items>
                     <Item>
                        <Number>1</Number>
-                       <ProductID>WINEGLASS01</ProductID>
-                       <Description>Wine Glasses Goblets Pair Clear Glass</Description>
-                       <Quantity>5</Quantity>
-                       <UnitOfMeasure>Each</UnitOfMeasure>
-                       <NetPrice>12</NetPrice>
-                       <NetWorth>60</NetWorth>
+                       <ProductID/>
+                       <ProductID>LIAB-STD01</ProductID>
+                       <Description>Personal Liability – Standard Plan | Bodily injury &amp; property damage | Limit: $100,000/occurrence</Description>
+                       <Quantity>1</Quantity>
+                       <UnitOfMeasure>mo.</UnitOfMeasure>
+                       <NetPrice>28.99</NetPrice>
+                       <NetWorth>28.99</NetWorth>
                        <VATPercentage>10</VATPercentage>
-                       <GrossWorth>66</GrossWorth>
+                       <GrossWorth>31.89</GrossWorth>
                     </Item>
                     <Item>
                        <Number>2</Number>
-                       <ProductID>WINERACK01</ProductID>
-                       <Description>With Hooks Stemware Storage Multiple Uses Iron Wine Rack Hanging Glass</Description>
-                       <Quantity>4</Quantity>
-                       <UnitOfMeasure>Each</UnitOfMeasure>
-                       <NetPrice>28.08</NetPrice>
-                       <NetWorth>112.32</NetWorth>
+                       <ProductID/>
+                       <ProductID>PROP-DAM01</ProductID>
+                       <Description>Property Damage | Third-party property damage caused by insured | Limit: $50,000 | Deductible: $500</Description>
+                       <Quantity>1</Quantity>
+                       <UnitOfMeasure>mo.</UnitOfMeasure>
+                       <NetPrice>34.5</NetPrice>
+                       <NetWorth>34.5</NetWorth>
                        <VATPercentage>10</VATPercentage>
-                       <GrossWorth>123.55</GrossWorth>
+                       <GrossWorth>37.95</GrossWorth>
                     </Item>
                     <Item>
                        <Number>3</Number>
-                       <ProductID>CORKSCREW01</ProductID>
-                       <Description>Replacement Corkscrew Parts Spiral Worm Wine Opener Bottle Houdini</Description>
+                       <ProductID/>
+                       <ProductID>MED-PAY01</ProductID>
+                       <Description>Medical Payments | No-fault medical expenses for injured parties | Limit: $5,000 per person</Description>
                        <Quantity>1</Quantity>
-                       <UnitOfMeasure>Each</UnitOfMeasure>
-                       <NetPrice>7.5</NetPrice>
-                       <NetWorth>7.5</NetWorth>
+                       <UnitOfMeasure>mo.</UnitOfMeasure>
+                       <NetPrice>18</NetPrice>
+                       <NetWorth>18</NetWorth>
                        <VATPercentage>10</VATPercentage>
-                       <GrossWorth>8.25</GrossWorth>
+                       <GrossWorth>19.8</GrossWorth>
                     </Item>
                     <Item>
                        <Number>4</Number>
-                       <ProductID>STEMLESS01</ProductID>
-                       <Description>HOME ESSENTIALS GRADIENT STEMLESS WINE GLASSES SET OF 4 20 FL OZ (591 ml) NEW</Description>
+                       <ProductID/>
+                       <ProductID>ROAD-AST01</ProductID>
+                       <Description>Roadside Assistance | 24/7 towing, jump-start &amp; lockout service | Up to 50 miles per incident</Description>
                        <Quantity>1</Quantity>
-                       <UnitOfMeasure>Each</UnitOfMeasure>
-                       <NetPrice>12.99</NetPrice>
-                       <NetWorth>12.99</NetWorth>
+                       <UnitOfMeasure>mo.</UnitOfMeasure>
+                       <NetPrice>12</NetPrice>
+                       <NetWorth>12</NetWorth>
                        <VATPercentage>10</VATPercentage>
-                       <GrossWorth>14.29</GrossWorth>
+                       <GrossWorth>13.2</GrossWorth>
                     </Item>
                  </Items>
                  <Summary>
                     <VATPercentage>10</VATPercentage>
-                    <NetWorth>192.81</NetWorth>
-                    <VATAmount>19.28</VATAmount>
-                    <GrossWorth>212.09</GrossWorth>
+                    <NetWorth>93.49</NetWorth>
+                    <VATAmount>9.35</VATAmount>
+                    <GrossWorth>102.84</GrossWorth>
                  </Summary>
-              </Invoice>')
+              </PolicyDocument>')
               ON CONFLICT (id) DO NOTHING;
               EOSQL
 
