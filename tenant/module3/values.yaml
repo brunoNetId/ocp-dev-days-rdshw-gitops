@@ -75,8 +75,8 @@ camelFlows:
   imageTag: "1.0-SNAPSHOT"
 
 s3:
-  invoiceUrl: "https://raw.githubusercontent.com/rh-app-connect-ai/lab-deploy-assets/main/invoices/invoice_61356291.pdf"
-  invoiceFile: "invoice_61356291.pdf"
+  pdfUrl: "https://raw.githubusercontent.com/openshift-dev-days/module3-dev-workspace/main/support/pdfs/policy_61356291.pdf"
+  pdfFile: "policy_61356291.pdf"
 
 connectivityLink:
   aiGateway:
